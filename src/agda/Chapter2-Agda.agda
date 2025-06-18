@@ -52,3 +52,42 @@ module Sandbox-Naturals where
     tonℕ : Evenℕ → ℕ
     tonℕ zero = zero
     tonℕ (suc-suc n) = suc (suc (tonℕ n))
+
+    module Sandbox-Usable where
+        postulate
+            Usable : Set
+            Unusable : Set
+
+        IsEven : ℕ → Set
+        IsEven zero = Usable
+        IsEven (suc zero) = Unusable
+        IsEven (suc (suc n)) = IsEven n
+    
+    -- IsEven here is called an indexed type
+    -- It is a type that depends on a value of another type, in this case ℕ
+    data IsEven : ℕ → Set where
+        -- base case: zero is even
+        zero-even : IsEven zero
+        -- inductive case: if n is even, then suc (suc n) is also even
+        suc-suc-even : {n : ℕ} → IsEven n → IsEven (suc (suc n))
+
+    four-is-even : IsEven four
+    -- do it via C-c C-r aka Refine, three times
+    four-is-even = suc-suc-even (suc-suc-even zero-even)
+
+    -- can we also prove that three is even?
+    three-is-even : IsEven three
+    -- it throws an error, because three is not even
+    -- No introduction forms found
+    three-is-even = suc-suc-even {!   !}    
+
+    data IsOdd : ℕ → Set where
+        -- base case: one is odd
+        one-odd : IsOdd (suc zero)
+        -- inductive case: if n is odd, then suc (suc n) is also odd
+        suc-suc-odd : {n : ℕ} → IsOdd n → IsOdd (suc (suc n))
+
+    -- inductive function to prove that every even number is followed by an odd number
+    even-and-odd : {n : ℕ} → IsEven n → IsOdd (suc n)
+    even-and-odd zero-even = one-odd
+    even-and-odd (suc-suc-even n) = suc-suc-odd (even-and-odd n)
