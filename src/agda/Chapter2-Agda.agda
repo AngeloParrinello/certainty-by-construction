@@ -91,3 +91,47 @@ module Sandbox-Naturals where
     even-and-odd : {n : ℕ} → IsEven n → IsOdd (suc n)
     even-and-odd zero-even = one-odd
     even-and-odd (suc-suc-even n) = suc-suc-odd (even-and-odd n)
+
+    data Maybe (A : Set) : Set where
+        just : A → Maybe A
+        nothing : Maybe A
+
+    evenEv : (n : ℕ) → Maybe (IsEven n)
+    evenEv zero = just zero-even
+    evenEv (suc zero) = nothing
+    evenEv (suc (suc n)) with evenEv n
+    ... | just x = just (suc-suc-even x)
+    ... | nothing = nothing
+
+    -- Addition
+    _+_ : ℕ → ℕ → ℕ
+    zero + y = y
+    -- here the parenthesis are VERY important
+    suc x + y = suc (x + y)
+    infixl 6 _+_
+
+    module Example-Silly where
+        open Chapter1-Agda
+            using (not)
+
+        data ℕ' : Set where
+            zero : ℕ'
+            suc : ℕ' → ℕ'
+            2suc : ℕ' → ℕ'
+
+        -- silly example
+        even?' : ℕ' → Bool
+        even?' zero = true
+        even?' (suc n) = not (even?' n)
+        even?' (2suc zero) = true
+        even?' (2suc n) = not (even?' n)
+
+    _*_ : ℕ → ℕ → ℕ
+    zero * b = zero
+    suc a * b = b + (a * b)
+    infixl 7 _*_
+
+    _^_ : ℕ → ℕ → ℕ
+    zero ^ _ = one
+    suc a ^ b = a * (a ^ b)
+    infixr 8 _^_
