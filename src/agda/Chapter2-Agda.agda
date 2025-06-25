@@ -135,3 +135,178 @@ module Sandbox-Naturals where
     zero ^ _ = one
     suc a ^ b = a * (a ^ b)
     infixr 8 _^_
+
+    _∸_ : ℕ → ℕ → ℕ
+    zero ∸ _ = zero
+    suc a ∸ zero = suc a
+    suc a ∸ suc b = a ∸ b
+    infixl 6 _∸_
+
+    module Natural-Tests where
+        open import Relation.Binary.PropositionalEquality
+        
+        _ : one + two ≡ three
+        _ = refl
+
+        _ : three ∸ one ≡ two
+        _ = refl
+
+        _ : one ∸ three ≡ zero
+        _ = refl
+
+        _ : one * two ≡ two
+        _ = refl
+
+
+
+module Misstep-Integers₁ where
+    data ℤ : Set where
+        zero : ℤ
+        suc : ℤ → ℤ
+        pred : ℤ → ℤ
+
+module Misstep-Integers₂ where
+    import Data.Nat as ℕ
+    open ℕ using (ℕ; zero; suc)
+
+    record ℤ : Set where
+        constructor mkℤ
+        field
+            pos : ℕ
+            neg : ℕ
+
+
+    normalize : ℤ → ℤ
+    normalize (mkℤ zero neg) = mkℤ zero neg
+    normalize (mkℤ (suc pos) zero) = mkℤ (suc pos) zero
+    normalize (mkℤ (suc pos) (suc neg)) = normalize (mkℤ pos neg)
+
+    _+_ : ℤ → ℤ → ℤ
+    mkℤ p₁ n₁ + mkℤ p₂ n₂ = normalize (mkℤ (p₁ ℕ.+ p₂) (n₁ ℕ.+ n₂))
+    infixl 5 _+_
+
+    _-_ : ℤ → ℤ → ℤ
+    mkℤ p₁ n₁ - mkℤ p₂ n₂ =
+        normalize (mkℤ (p₁ ℕ.+ n₂) (n₁ ℕ.+ p₂))
+    infixl 5 _-_ 
+
+    _*_ : ℤ → ℤ → ℤ
+    mkℤ p₁ n₁ * mkℤ p₂ n₂ =
+        normalize (mkℤ (p₁ ℕ.* p₂ ℕ.+ n₁ ℕ.* n₂) (p₁ ℕ.* n₂ ℕ.+ n₁ ℕ.* p₂))
+    infixl 6 _*_
+
+module Missstep-Integers₃ where
+    open import Data.Nat
+
+    data ℤ : Set where
+        +_ : ℕ → ℤ
+        -_ : ℕ → ℤ
+
+    _ : ℤ
+    _ = - 2
+
+    _ : ℤ
+    -- the space is necessary here
+    _ = + 6
+
+
+module Sandbox-Integers where
+    import Data.Nat as ℕ
+    open ℕ using (ℕ)
+
+    data ℤ : Set where
+        +_ : ℕ → ℤ
+        -[1+_] : ℕ → ℤ
+
+    0ℤ : ℤ
+    0ℤ = + 0
+
+    1ℤ : ℤ
+    1ℤ = + 1
+
+    suc : ℤ → ℤ
+    suc (+ x) = + ℕ.suc x
+    suc (-[1+ ℕ.zero ]) = 0ℤ
+    suc (-[1+ ℕ.suc x ]) = -[1+ x ]
+
+    pred : ℤ → ℤ
+    pred (+ ℕ.zero) = -[1+ ℕ.zero ] -- check this one, should be just -1ℤ
+    pred (+ ℕ.suc x) = + x
+    pred (-[1+ x ]) = -[1+ ℕ.suc x ]
+
+    pattern +[1+_] n = + ℕ.suc n
+    pattern +0 = + ℕ.zero
+
+    -_ : ℤ → ℤ
+    - +0 = +0
+    - +[1+ n ] = -[1+ n ]
+    - -[1+ n ] = +[1+ n ]
+
+
+    module Naive-Addition where
+        _+_ : ℤ → ℤ → ℤ
+        +0 + y = y
+        +[1+ x ] + +0 = +[1+ x ]
+        +[1+ x ] + +[1+ y ] = +[1+ 1 ℕ.+ x ℕ.+ y ]
+        +[1+ x ] + -[1+ y ] = {!   !}
+        -[1+ x ] + +0 = -[1+ x ]
+        -[1+ x ] + +[1+ y ] = {!   !}
+        -[1+ x ] + -[1+ y ] = -[1+ 1 ℕ.+ x ℕ.+ y ]
+
+    _⊖_ : ℕ → ℕ → ℤ
+    ℕ.zero ⊖ ℕ.zero = +0
+    ℕ.zero ⊖ ℕ.suc n = -[1+ n ]
+    ℕ.suc n ⊖ ℕ.zero = +[1+ n ]
+    ℕ.suc n ⊖ ℕ.suc m = n ⊖ m
+
+    infixl 5 _+_
+
+    _+_ : ℤ → ℤ → ℤ
+    + x + + y = +(x ℕ.+ y)
+    + x + -[1+ y ] = x ⊖ ℕ.suc y
+    -[1+ x ] + + y = y ⊖ ℕ.suc x
+    -[1+ x ] + -[1+ y ] = -[1+ x ℕ.+ ℕ.suc y ]
+
+    infixl 5 _-_
+    _-_ : ℤ → ℤ → ℤ
+    x - y = x + - y
+
+    infixl 6 _*_
+    _*_ : ℤ → ℤ → ℤ
+    x * +0 = +0
+    x * +[1+ ℕ.zero ] = x
+    x * -[1+ ℕ.zero ] = - x
+    x * +[1+ ℕ.suc y ] = (+[1+ y ] * x) + x
+    x * -[1+ ℕ.suc y ] = (-[1+ y ] * x) - x
+
+    module Tests where
+        open import Relation.Binary.PropositionalEquality
+
+        _ : -(+ 2) * - (+ 6) ≡ + 12
+        _ = refl
+
+        _ : (+ 3) - (+ 10) ≡ -(+ 7)
+        _ = refl
+
+open import Data.Nat
+    using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
+    public
+
+open Sandbox-Naturals
+    using (one; two; three; four)
+    public
+
+open Sandbox-Naturals
+    using (IsEven)
+    renaming ( zero-even to zero-even
+            ; suc-suc-even to ss-even
+            )
+    public
+
+open import Data.Maybe
+    using (Maybe; just; nothing)
+    public
+
+
+
+
