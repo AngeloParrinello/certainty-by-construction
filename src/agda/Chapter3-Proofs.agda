@@ -164,3 +164,112 @@ module Playground where
   not-involutive : (x : Bool) → not (not x) ≡ x
   not-involutive false = refl
   not-involutive true = refl
+
+  -- Transitivity
+  trans : {A : Set} → {x y z : A} → (x ≡ y) → (y ≡ z) → (x ≡ z)
+  trans refl refl = refl
+
+  -- lets try to prove that a¹ = a + (b x 0)
+  a^1≡a+b*0 : ∀ (a b : ℕ) → a ^ 1 ≡ a + (b * zero)
+  a^1≡a+b*0 a b = trans (^-identityʳ a) (trans ( sym (+-identityʳ a)) (cong (λ φ → a + φ) ( sym (*-zeroʳ b))))
+  -- shorter version
+  -- a^1≡a+b*0 a b = trans (^-identityʳ a) (trans ( sym (+-identityʳ a)) (cong (a + _) ( sym (*-zeroʳ b))))
+
+  -- factorial postfix notation
+  _! : ℕ → ℕ
+  zero ! = 1
+  (suc n) ! = (suc n) * (n !)
+  _ : 5 ! ≡ 120
+  _ = refl
+
+  ∣_ : ℕ → ℕ
+  ∣_ = suc
+
+  infix 20 ∣_
+
+  five : ℕ
+  -- five = suc (suc (suc (suc (suc zero))))
+  --five = ∣ ∣ ∣ ∣ ∣ zero
+
+  -- new syntax for zero
+  ■ : ℕ
+  ■ = zero
+
+  five = ∣ ∣ ∣ ∣ ∣ ■
+
+  -- delimited operators
+  postulate
+    ℝ : Set
+    π : ℝ
+    -- floor function
+    ⌊_⌋ : ℝ → ℕ
+    -- ceiling function
+    ⌜_⌝ : ℝ → ℕ
+
+
+  three' : ℕ
+  three' = ⌊ π ⌋
+
+  four' : ℕ
+  four' = ⌜ π ⌝
+
+  -- ternary operator
+  _‽_⦂_ : {A : Set} → Bool → A → A → A
+  false ‽ t ⦂ f = f
+  true ‽ t ⦂ f = t
+
+  infixr 20 _‽_⦂_
+
+  _ : ℕ
+  _ = not true ‽ 4 ⦂ 1
+
+  -- let's define our if then else
+  if_then_else_ : {A : Set} → Bool → A → A → A
+  if_then_else_ = _‽_⦂_
+
+  infixr 20 if_then_else_
+
+  -- and use it
+  _ : ℕ
+  _ = if not true then 4 else 1
+
+  -- due to our infixr defintion we can also nest it
+  _ : ℕ
+  _ = if not true then 4 else if true then 1 else 0
+
+  -- case..of example (we do pattern matching on the right hand side)
+  case_of_ : {A B : Set} → A → (A → B) → B
+  case e of f = f e
+
+  _ : ℕ
+  _ = case true of λ 
+      { true → 1
+      ; false → 4
+      }
+
+  _is-equal-to_ : {A : Set} → A → A → Set
+  x is-equal-to y = x ≡ y
+
+  -- Equational Reasoning
+  module ≡-Reasoning where
+    
+    -- tombstone marker formal proof ender, marks the end of the chain
+    _∎ : {A : Set} → (x : A) → x ≡ x
+    _∎ x = refl
+    infix 3 _∎
+
+    -- we can use this to prove that two things are equal
+    -- This style of proof is common in equational reasoning
+    -- Each step should be definitionally equal
+    -- It’s essentially syntax sugar that doesn’t change the proof content, just improves clarity
+    _≡⟨⟩_ : {A : Set} {y : A} → (x : A) → x ≡ y → x ≡ y
+    x ≡⟨⟩ p = p
+
+    infixr 2 _≡⟨⟩_
+
+    _ : 4 ≡ suc (one + two)
+    _ = 
+      4               ≡⟨⟩
+      two + two       ≡⟨⟩
+      suc one + two   ≡⟨⟩
+      suc (one + two) ∎
