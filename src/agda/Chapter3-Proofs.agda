@@ -1,16 +1,5 @@
 module Chapter3-Proofs where
 
--- In Agda we use the Intuitionistic logic, so we can prove things by
--- constructing them, and we can prove things by contradiction, but we cannot
--- prove things by assuming the opposite and then deriving a contradiction.
--- So we break down the proofs in smaller steps, until we reach the
--- trivial case, which is the base case of the induction.
--- Intuitionistic proofs correspond to algorithms, so we can think of them as
--- programs that compute the proof.
-
--- Boolean blindness. In Agda we avoid it because we piggy back on the
--- type system the whole path that leads to the proof. 
-
 open import Chapter1-Agda
   using (Bool; true; false; _∨_; _∧_; not)
 
@@ -20,11 +9,6 @@ open import Chapter2-Numbers
 module Definition where
   infix 4 _≡_
 
-  -- Here we take two parameters, the first one is the type of the elements we want to
-  -- compare, and the second one is the type of the elements we want to compare.  But we 
-  -- discard the second one, and we are saying that the only way to construct an equality
-  -- is thorugh the fact that the two elements are the same, so we can
-  -- construct a proof that they are equal.
   data _≡_ {A : Set} : A → A → Set where
     refl : {x : A} → x ≡ x
 
@@ -55,6 +39,12 @@ module Playground where
   _ : three ≡ two + one
   _ = refl
 
+  _ : three ≡ one + two
+  _ = refl
+
+  _ : one + two ≡ three
+  _ = refl
+
   -- Easy, depends on how the `_+_` has been defined
   zero-is-+-identity₁ : ∀ (n : ℕ) → zero + n ≡ n
   zero-is-+-identity₁ _ = refl
@@ -65,7 +55,7 @@ module Playground where
   -- With flipped arguments requires more work, and the use of `cong`
   zero-is-+-identity : ∀ (n : ℕ) → n + zero ≡ n
   zero-is-+-identity zero = refl
-  zero-is-+-identity (suc n) = cong suc (zero-is-+-identity n)
+  zero-is-+-identity (suc m) = cong suc (zero-is-+-identity m)
 
   suc-+ : ∀ (n m : ℕ) → n + suc m ≡ suc (n + m)
   suc-+ zero m = refl
@@ -109,7 +99,7 @@ module Playground where
   *-identityʳ (suc x) = cong suc (*-identityʳ x)
 
   -- Exercise
-  ^-identityʳ : ∀ (x : ℕ) → x ^ one ≡ x
+  ^-identityʳ : (x : ℕ) → x ^ one ≡ x
   ^-identityʳ zero = refl
   ^-identityʳ (suc x) = cong suc (^-identityʳ x)
 
@@ -165,111 +155,153 @@ module Playground where
   not-involutive false = refl
   not-involutive true = refl
 
-  -- Transitivity
-  trans : {A : Set} → {x y z : A} → (x ≡ y) → (y ≡ z) → (x ≡ z)
+  trans : {A : Set} {x y z : A} → x ≡ y → y ≡ z → x ≡ z
   trans refl refl = refl
 
-  -- lets try to prove that a¹ = a + (b x 0)
-  a^1≡a+b*0 : ∀ (a b : ℕ) → a ^ 1 ≡ a + (b * zero)
-  a^1≡a+b*0 a b = trans (^-identityʳ a) (trans ( sym (+-identityʳ a)) (cong (λ φ → a + φ) ( sym (*-zeroʳ b))))
-  -- shorter version
-  -- a^1≡a+b*0 a b = trans (^-identityʳ a) (trans ( sym (+-identityʳ a)) (cong (a + _) ( sym (*-zeroʳ b))))
+  a^1≡a+b*0 : (a b : ℕ) → a ^ 1 ≡ a + b * 0
+  -- a ^ 1 ≡ a + b * 0
+  -- a ≡ a + b * 0
+  -- a + 0 ≡ a + b * 0
+  -- a + b * 0 ≡ a + b * 0
+  a^1≡a+b*0 a b = trans (^-identityʳ a)
+                    (trans (sym (+-identityʳ a))
+                      (cong (λ φ → a + φ) (sym (*-zeroʳ b))))
 
-  -- factorial postfix notation
-  _! : ℕ → ℕ
-  zero ! = 1
-  (suc n) ! = (suc n) * (n !)
-  _ : 5 ! ≡ 120
-  _ = refl
+  a^1≡a+b*0¹ : (a b : ℕ) → a ^ 1 ≡ a + b * 0
+  a^1≡a+b*0¹ a b = trans (^-identityʳ a)
+                         (trans (sym (+-identityʳ a))
+                                -- `a +_` is `λ φ → a + φ`
+                                (cong (a +_) (sym (*-zeroʳ b))))
 
-  ∣_ : ℕ → ℕ
-  ∣_ = suc
+  -- also using rewrite
+  a^1≡a+b*0² : (a b : ℕ) → a ^ 1 ≡ a + b * 0
+  a^1≡a+b*0² a b rewrite *-zeroʳ b rewrite +-identityʳ a rewrite *-identityʳ a = refl
+  -- a^1≡a+b*0² a b rewrite ^-identityʳ a rewrite *-zeroʳ b rewrite +-identityʳ a = refl
 
-  infix 20 ∣_
-
-  five : ℕ
-  -- five = suc (suc (suc (suc (suc zero))))
-  --five = ∣ ∣ ∣ ∣ ∣ zero
-
-  -- new syntax for zero
-  ■ : ℕ
-  ■ = zero
-
-  five = ∣ ∣ ∣ ∣ ∣ ■
-
-  -- delimited operators
-  postulate
-    ℝ : Set
-    π : ℝ
-    -- floor function
-    ⌊_⌋ : ℝ → ℕ
-    -- ceiling function
-    ⌜_⌝ : ℝ → ℕ
-
-
-  three' : ℕ
-  three' = ⌊ π ⌋
-
-  four' : ℕ
-  four' = ⌜ π ⌝
-
-  -- ternary operator
-  _‽_⦂_ : {A : Set} → Bool → A → A → A
-  false ‽ t ⦂ f = f
-  true ‽ t ⦂ f = t
-
-  infixr 20 _‽_⦂_
-
-  _ : ℕ
-  _ = not true ‽ 4 ⦂ 1
-
-  -- let's define our if then else
-  if_then_else_ : {A : Set} → Bool → A → A → A
-  if_then_else_ = _‽_⦂_
-
-  infixr 20 if_then_else_
-
-  -- and use it
-  _ : ℕ
-  _ = if not true then 4 else 1
-
-  -- due to our infixr defintion we can also nest it
-  _ : ℕ
-  _ = if not true then 4 else if true then 1 else 0
-
-  -- case..of example (we do pattern matching on the right hand side)
-  case_of_ : {A B : Set} → A → (A → B) → B
-  case e of f = f e
-
-  _ : ℕ
-  _ = case true of λ 
-      { true → 1
-      ; false → 4
-      }
-
-  _is-equal-to_ : {A : Set} → A → A → Set
-  x is-equal-to y = x ≡ y
-
-  -- Equational Reasoning
   module ≡-Reasoning where
-    
-    -- tombstone marker formal proof ender, marks the end of the chain
+
+    -- series of right associative operators to chain equalities
+
+    -- the end of our proof
+    infixr 3 _∎
     _∎ : {A : Set} → (x : A) → x ≡ x
     _∎ x = refl
-    infix 3 _∎
 
-    -- we can use this to prove that two things are equal
-    -- This style of proof is common in equational reasoning
-    -- Each step should be definitionally equal
-    -- It’s essentially syntax sugar that doesn’t change the proof content, just improves clarity
+
+    -- step: moving along the proof we already got
+    infixr 2 _≡⟨⟩_
     _≡⟨⟩_ : {A : Set} {y : A} → (x : A) → x ≡ y → x ≡ y
     x ≡⟨⟩ p = p
 
-    infixr 2 _≡⟨⟩_
-
     _ : 4 ≡ suc (one + two)
-    _ = 
-      4               ≡⟨⟩
-      two + two       ≡⟨⟩
-      suc one + two   ≡⟨⟩
-      suc (one + two) ∎
+    _ = 4
+      ≡⟨⟩
+        two + two
+      ≡⟨⟩
+        suc one + suc one
+      ≡⟨⟩
+        suc (suc zero) + suc (suc zero)
+      ≡⟨⟩
+        suc (suc (suc zero)) + (suc zero)
+      ≡⟨⟩
+        suc (suc (suc (suc zero)))
+      ∎
+
+    -- step: with justification, syntax sugar for trans
+    infixr 2 _≡⟨_⟩_
+    _≡⟨_⟩_ : {A : Set} → (x : A) → {y z : A} → x ≡ y → y ≡ z → x ≡ z
+    x ≡⟨ xy ⟩ yz = trans xy yz
+
+    -- init of our proof
+    infix 1 begin_
+    begin_ : {A : Set} → {x y : A} → x ≡ y → x ≡ y
+    begin p = p                 --
+
+    a^1≡a+b*0³ : (a b : ℕ) → a ^ 1 ≡ a + b * 0
+    a^1≡a+b*0³ a b =
+      begin
+        a ^ 1
+      ≡⟨ ^-identityʳ a ⟩
+        a
+      ≡⟨ sym (+-identityʳ a) ⟩
+        a + 0
+      ≡⟨ cong (a +_) (sym (*-zeroʳ b)) ⟩
+        a + b * 0
+      ∎
+
+    -- NOTE: to solve it incrementtally
+
+    -- a^1≡a+b*0⁴ : (a b : ℕ) → a ^ 1 ≡ a + b * 0
+    -- a^1≡a+b*0⁴ a b =
+    --   begin
+    --     -- begin with the expression on the left of the equality
+    --     a ^ 1
+    --   ≡⟨ {!!} ⟩ -- leave a hole in the equality you *need* to use, in this case to show that `a ^ 1 ≡ a`
+    --     a  -- state what you want to obtain
+    --   ≡⟨ {!!} ⟩ -- leave room for what comes next
+    --     {!!}
+
+  open ≡-Reasoning
+
+  ∨-assoc : (a b c : Bool) → (a ∨ b) ∨ c ≡ a ∨ (b ∨ c)
+  ∨-assoc false b c = refl
+  ∨-assoc true b c = refl
+
+  -- Show that addiction is associative
+  +-assoc : (a b c : ℕ) → (a + b) + c ≡ a + (b + c)
+  +-assoc zero b c = refl
+  +-assoc (suc a) b c = begin
+                          suc a + b + c
+                        ≡⟨⟩
+                          suc (a + b + c)
+                        ≡⟨ cong suc (+-assoc a b c) ⟩
+                          suc (a + (b + c))
+                        ≡⟨⟩
+                          suc a + (b + c)
+                        ∎
+
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; module ≡-Reasoning)
+  public
+
+module PropEq where
+  open Relation.Binary.PropositionalEquality
+    using (refl; cong; sym; trans)
+    public
+
+open import Data.Bool
+  using (if_then_else_)
+  public
+
+open import Function
+  using (case_of_)
+  public
+
+open import Data.Bool.Properties
+  using ( ∨-identityˡ ; ∨-identityʳ
+        ; ∨-zeroˡ
+        ; ∨-zeroʳ
+        ; ∨-assoc
+        ; ∧-assoc
+        ; ∧-identityˡ ; ∧-identityʳ
+        ; ∧-zeroˡ
+        ; ∧-zeroʳ
+        ; not-involutive
+        )
+  public
+
+open import Data.Nat.Properties
+  using ( +-identityˡ ; +-identityʳ
+        ; *-identityˡ ; *-identityʳ
+        ; *-zeroˡ
+        ; *-zeroʳ
+        ; +-assoc
+        ; *-assoc
+        ; +-comm
+        ; *-comm
+        ; ^-identityʳ
+        ; +-suc
+        ; suc-injective
+        ; *-distribˡ-+ ; *-distribʳ-+
+        )
+  public
